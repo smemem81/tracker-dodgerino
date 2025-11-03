@@ -2,19 +2,20 @@
 * ======================================
 * DODGE TOOL - BACKEND (server.js)
 * ======================================
-* VERSION 9.0 - FINAL UX FIXES AND HOSTING PREP
-* This file is complete and ready for deployment to Render.
+* VERSION 10.0 - FINAL COMPLETE LOGIC WITH CORS FIX
+* 1. CORS is enabled to allow GitHub Pages to communicate with Railway.
+* 2. All previous logic (Time formatting, High-Elo window, 403 handling) is included.
 */
 
 const express = require('express');
 const fetch = require('node-fetch');
+const cors = require('cors'); // <-- ADDED CORS
 const app = express();
 
 // --- CONFIGURATION ---
-// !!! RIOT_API_KEY is loaded SECURELY from process.env !!!
 const RIOT_API_KEY = process.env.RIOT_API_KEY; 
-const DELAY_BETWEEN_PLAYERS = 2000; // 2 seconds
-const HIGH_RISK_MINUTES = 15; // Treat matches finished within 15m as high risk/inferred online.
+const DELAY_BETWEEN_PLAYERS = 2000;
+const HIGH_RISK_MINUTES = 15;
 // ---------------------
 
 // --- DATA CACHE ---
@@ -23,6 +24,21 @@ let championKeyMap = {};
 let LATEST_PATCH_VERSION = "15.21.1"; 
 // ---------------------
 
+// --- CORS FIX: Allow requests from your GitHub Pages domain ---
+const allowedOrigins = ['https://smemem81.github.io', 'http://localhost:3000', 'http://localhost:8000']; 
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or local requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'), false);
+    }
+  }
+};
+
+app.use(cors(corsOptions)); // <-- ENABLE CORS
 app.use(express.json());
 app.use(express.static('.'));
 
@@ -271,7 +287,7 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
             // Case 1: 403 (Policy Block) + Recent Game -> Streamer Mode Warning
             return { 
                 status: 'HIGH_RISK', 
-                statusMessage: `BE CAREFUL (${formattedTime})`, // Direct warning + formatted time
+                statusMessage: `BE CAREFUL (${formattedTime})`, 
                 isChampBanned: null, 
                 profileIconUrl: profileIconUrl,
                 lastMatchDetails: fullMatchDetails
@@ -320,7 +336,7 @@ app.post('/check-status', async (req, res) => {
 // Start the server
 console.log("[Server] Initializing...");
 loadChampionData().then(() => {
-    // FIXED: Uses process.env.PORT provided by the hosting environment
+    // Uses process.env.PORT provided by the hosting environment
     const serverPort = process.env.PORT || 3000; 
     app.listen(serverPort, () => {
         console.log(`====================================================`);
