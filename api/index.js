@@ -1,22 +1,16 @@
 /*
 * ======================================
-* DODGE TOOL - BACKEND (server.js)
+* FILE: api/index.js (Vercel Serverless Handler)
 * ======================================
-* VERSION 10.0 - FINAL COMPLETE LOGIC WITH CORS FIX
-* 1. CORS is enabled to allow GitHub Pages to communicate with Railway.
-* 2. All previous logic (Time formatting, High-Elo window, 403 handling) is included.
+* This code replaces the original server.js logic and is set up to run on Vercel.
 */
 
-const express = require('express');
 const fetch = require('node-fetch');
-const cors = require('cors'); // <-- ADDED CORS
-const app = express();
 
-// --- CONFIGURATION ---
+// --- CONFIGURATION (KEPT AT THE TOP) ---
 const RIOT_API_KEY = process.env.RIOT_API_KEY; 
 const DELAY_BETWEEN_PLAYERS = 2000;
-const HIGH_RISK_MINUTES = 15;
-// ---------------------
+const HIGH_RISK_MINUTES = 15; 
 
 // --- DATA CACHE ---
 let championIdMap = {};
@@ -24,29 +18,10 @@ let championKeyMap = {};
 let LATEST_PATCH_VERSION = "15.21.1"; 
 // ---------------------
 
-// --- CORS FIX: Allow requests from your GitHub Pages domain ---
-const allowedOrigins = ['https://smemem81.github.io', 'http://localhost:3000', 'http://localhost:8000']; 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or local requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'), false);
-    }
-  }
-};
-
-app.use(cors(corsOptions)); // <-- ENABLE CORS
-app.use(express.json());
-app.use(express.static('.'));
-
-// --- HELPER FUNCTIONS ---
+// --- HELPER FUNCTIONS (Kept the same) ---
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-// --- NEW FUNCTION: Formats minutes into human-readable string ---
 const formatTimeAgo = (minutes) => {
     if (minutes === 0) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
@@ -57,7 +32,6 @@ const formatTimeAgo = (minutes) => {
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
 };
-// --- END NEW FUNCTION ---
 
 const getPlatformUrl = (region) => {
     const platforms = {
@@ -91,9 +65,7 @@ const loadChampionData = async () => {
         const versionResponse = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
         const versions = await versionResponse.json();
         LATEST_PATCH_VERSION = versions[0];
-        console.log(`[Data Dragon] Latest patch set to: ${LATEST_PATCH_VERSION}`);
 
-        console.log("[Data Dragon] Fetching champion.json...");
         const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH_VERSION}/data/en_US/champion.json`);
         const json = await response.json();
         const champions = json.data;
@@ -109,7 +81,6 @@ const loadChampionData = async () => {
 
         championIdMap = tempIdMap;
         championKeyMap = tempKeyMap;
-        console.log(`[Data Dragon] Loaded ${Object.keys(championIdMap).length} champions.`);
 
     } catch (error) {
         console.error("[Data Dragon] Failed to load champion data:", error);
@@ -192,7 +163,6 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
     // --- Utility function for authenticated fetch (used for all API calls) ---
     const authenticatedFetch = async (url) => {
         const response = await fetch(url, { headers: { "X-Riot-Token": RIOT_API_KEY } });
-        console.log(`[API Response] Status: ${response.status} for URL: ${url}`);
         return response;
     };
     
@@ -212,7 +182,7 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
 
     // --- 3. Check for Live Game (V5 - Regional Routing) ---
     const spectatorURL = `https://${regional}/lol/spectator/v5/active-games/by-puuid/${puuid}`;
-    const liveGameResponse = await authenticatedFetch(spectatorURL);
+    const liveGameResponse = await fetch(spectatorURL, { headers: { "X-Riot-Token": RIOT_API_KEY } });
     
     // --- CASE A: Success (200 OK) - Player is viewable and in game ---
     if (liveGameResponse.ok) {
@@ -277,7 +247,6 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
     const champBanned = [...(fullMatchDetails.team1Bans || []), ...(fullMatchDetails.team2Bans || [])]
         .some(ban => ban.toLowerCase() === champImageKey.toLowerCase());
     
-    // Format the time once for use in all subsequent messages
     const formattedTime = formatTimeAgo(minutesAgo);
         
     if (minutesAgo <= HIGH_RISK_MINUTES) {
@@ -315,33 +284,48 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
 }
 
 
-// --- THE MAIN API ENDPOINT ---
-app.post('/check-status', async (req, res) => {
-    const { players, champToTrack } = req.body;
-    console.log(`[Server] Received check request for ${players.length} players. Tracking: ${champToTrack}`);
-    
-    const allStatuses = [];
-    
-    for (const player of players) {
-        console.log(`[Server] Checking ${player.gameName}#${player.tagLine} on ${player.region}...`);
-        const status = await getPlayerStatus(player.region, player.gameName, player.tagLine, champToTrack);
-        allStatuses.push({ ...status, id: player.id });
-        await delay(DELAY_BETWEEN_PLAYERS);
-    }
+// --- API ENTRY POINT FOR VERCEL ---
 
-    console.log(`[Server] Check complete. Sending ${allStatuses.length} statuses to frontend.`);
-    res.json(allStatuses);
-});
-
-// Start the server
-console.log("[Server] Initializing...");
+// Load champion data once when the serverless function environment starts
+// This makes sure the data is ready before the first request runs.
 loadChampionData().then(() => {
-    // Uses process.env.PORT provided by the hosting environment
-    const serverPort = process.env.PORT || 3000; 
-    app.listen(serverPort, () => {
-        console.log(`====================================================`);
-        console.log(`  Dodge Tool Backend Server IS RUNNING`);
-        console.log(`  Server listening on port ${serverPort}.`);
-        console.log(`====================================================`);
-    });
+    console.log("Data Dragon loaded successfully for Vercel.");
 });
+
+
+// Export the main handler function for VERCEL
+module.exports = async (req, res) => {
+    
+    // Set CORS headers manually to fix the error you were seeing
+    res.setHeader('Access-Control-Allow-Origin', '*'); 
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle the OPTIONS pre-flight request
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    
+    if (req.url === '/check-status' && req.method === 'POST') {
+        try {
+            // Vercel handles the request body parsing for us
+            const { players, champToTrack } = req.body;
+            
+            const allStatuses = [];
+            for (const player of players) {
+                const status = await getPlayerStatus(player.region, player.gameName, player.tagLine, champToTrack);
+                allStatuses.push({ ...status, id: player.id });
+                await delay(DELAY_BETWEEN_PLAYERS);
+            }
+
+            res.status(200).json(allStatuses);
+        } catch (error) {
+            console.error("Vercel Function Error:", error);
+            res.status(500).json({ message: "Internal Server Error during processing. Check logs.", error: error.message });
+        }
+    } else {
+        // Handle invalid routes (Not /check-status)
+        res.status(404).send('Not Found');
+    }
+};
