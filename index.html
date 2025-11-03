@@ -15,33 +15,23 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        // Set Righteous as the primary 'sans' font
                         sans: ['Righteous', 'sans-serif'],
                     },
                     colors: {
-                        // New theme based on your screenshot
-                        'dark-bg': '#0A0A0A', // Almost black background
-                        'dark-card': '#1C1C1C', // Dark gray for cards
-                        'dark-border': '#2C2C2C', // Lighter gray for borders
-                        'dark-text-primary': '#F0F0F0', // Off-white
-                        'dark-text-secondary': '#888888', // Medium gray
+                        'dark-bg': '#0A0A0A',
+                        'dark-card': '#1C1C1C',
+                        'dark-border': '#2C2C2C',
+                        'dark-text-primary': '#F0F0F0',
+                        'dark-text-secondary': '#888888',
                         
-                        'brand-blue': '#007BFF', // Primary blue accent
-                        'brand-red': '#E53E3E',   // Bright red for high risk
-                        'brand-green': '#22C55E', // Green for low risk
-                        'brand-yellow': '#FACC15', // Yellow for hover/active
+                        'brand-blue': '#007BFF',
+                        'brand-red': '#E53E3E',
+                        'brand-green': '#22C55E',
+                        'brand-yellow': '#FACC15',
                     },
-                    // --- Key Change: Remove all rounded corners ---
                     borderRadius: {
-                        'none': '0px',
-                        'sm': '0px',
-                        'DEFAULT': '0px',
-                        'md': '0px',
-                        'lg': '0px',
-                        'xl': '0px',
-                        '2xl': '0px',
-                        '3xl': '0px',
-                        'full': '0px',
+                        'none': '0px', 'sm': '0px', 'DEFAULT': '0px', 'md': '0px',
+                        'lg': '0px', 'xl': '0px', '2xl': '0px', '3xl': '0px', 'full': '0px',
                     }
                 },
             },
@@ -49,99 +39,55 @@
     </script>
     
     <style>
-        /* This is the fix for the text colors. */
         .status-text.IN_GAME { color: #007BFF; }
         .status-text.HIGH_RISK { color: #E53E3E; }
         .status-text.LOW_RISK { color: #22C55E; }
         .status-text.ERROR { color: #FACC15; }
         .status-text.IDLE { color: #888888; }
-        .status-text.CHECKING { color: #888888; } /* Added */
-
+        .status-text.CHECKING { color: #888888; }
         .ban-status.BANNED { color: #E53E3E; }
         .ban-status.NOT_BANNED { color: #22C55E; }
         .ban-status.IDLE { color: #888888; }
-
-        /* Style for the delete button on hover */
-        .player-item:hover .delete-btn {
-            opacity: 1;
-        }
-
-        /* NEW: Styles for the modal */
-        #modal-overlay {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-        }
-        #modal-overlay.visible {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        #modal-content {
-            transform: translateY(20px);
-            transition: transform 0.2s ease-in-out;
-            max-width: 600px; /* Make modal wider */
-        }
-        #modal-overlay.visible #modal-content {
-            transform: translateY(0);
-        }
-
+        .player-item:hover .delete-btn { opacity: 1; }
+        #modal-overlay { visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        #modal-overlay.visible { visibility: visible; opacity: 1; }
+        #modal-content { transform: translateY(20px); transition: transform 0.2s ease-in-out; max-width: 600px; }
+        #modal-overlay.visible #modal-content { transform: translateY(0); }
     </style>
 </head>
 <body class="bg-dark-bg text-dark-text-primary font-sans p-4 md:p-8">
 
     <div class="max-w-xl mx-auto">
-        
         <h1 class="text-3xl font-bold text-center text-white mb-6 tracking-wide uppercase">Dodge Tool</h1>
-
         <div class="bg-dark-card border border-dark-border mb-3">
             <div class="flex flex-col sm:flex-row gap-3 p-4">
                 <input type="text" id="gameNameInput" class="flex-grow w-full p-3 bg-dark-bg border border-dark-border text-dark-text-primary placeholder-dark-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-blue" placeholder="Game Name">
                 <input type="text" id="tagLineInput" class="w-full sm:w-28 p-3 bg-dark-bg border border-dark-border text-dark-text-primary placeholder-dark-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-blue" placeholder="#KR1">
-                
                 <select id="regionSelect" class="w-full sm:w-auto p-3 bg-dark-bg border border-dark-border text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue">
-                    <option value="KR">KR</option>
-                    <option value="EUW1">EUW</option>
-                    <option value="NA1">NA</option>
-                    <option value="EUN1">EUNE</option>
-                    <option value="BR1">BR</option>
-                    <option value="JP1">JP</option>
-                    <option value="LA1">LAN</option>
-                    <option value="LA2">LAS</option>
-                    <option value="OC1">OCE</option>
-                    <option value="TR1">TR</option>
-                    <option value="RU">RU</option>
+                    <option value="KR">KR</option><option value="EUW1">EUW</option><option value="NA1">NA</option><option value="EUN1">EUNE</option><option value="BR1">BR</option><option value="JP1">JP</option><option value="LA1">LAN</option><option value="LA2">LAS</option><option value="OC1">OCE</option><option value="TR1">TR</option><option value="RU">RU</option>
                 </select>
-                
                 <button id="addPlayerButton" class="w-full sm:w-auto px-5 py-3 bg-brand-blue text-white font-semibold transition-all duration-200 ease-in-out hover:bg-brand-yellow hover:text-dark-bg focus:outline-none uppercase tracking-wider">
                     Add
                 </button>
             </div>
         </div>
-
         <div class="bg-dark-card border border-dark-border mb-6 p-4">
              <label for="champToTrackInput" class="block text-sm font-medium text-dark-text-secondary mb-2">CHAMPION TO TRACK BANS FOR</label>
              <input type="text" id="champToTrackInput" class="w-full p-3 bg-dark-bg border border-dark-border text-dark-text-primary placeholder-dark-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-blue" placeholder="e.g., Katarina">
         </div>
-
-
         <div id="playerListContainer" class="bg-dark-card border border-dark-border">
             <div class="flex justify-between items-center p-4 border-b border-dark-border">
                 <h2 class="text-lg font-semibold text-white uppercase tracking-wider">Tracking List</h2>
                 <span id="playerCount" class="text-sm text-dark-text-secondary">0 players</span>
             </div>
-            
             <div id="playerList" class="divide-y divide-dark-border">
                 <p id="emptyMessage" class="text-center text-dark-text-secondary p-6">Add players to begin tracking.</p>
             </div>
-            
             <div class="p-4 border-t border-dark-border">
                 <div id="summaryMessage" class="p-3 mb-4 font-bold text-md text-center bg-dark-bg border border-dark-border text-dark-text-secondary">
                     Click "Refresh All" to check statuses.
                 </div>
-                
-                <button id="refreshButton" class="w-full py-4 px-6 bg-brand-blue text-white text-lg font-semibold transition-all duration-200 ease-in-out hover:bg-brand-yellow hover:text-dark-bg focus:outline-none
-                                         disabled:bg-dark-border disabled:text-dark-text-secondary disabled:cursor-not-allowed uppercase tracking-wider">
+                <button id="refreshButton" class="w-full py-4 px-6 bg-brand-blue text-white text-lg font-semibold transition-all duration-200 ease-in-out hover:bg-brand-yellow hover:text-dark-bg focus:outline-none disabled:bg-dark-border disabled:text-dark-text-secondary disabled:cursor-not-allowed uppercase tracking-wider">
                     REFRESH ALL
                 </button>
             </div>
@@ -156,7 +102,6 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
-            
             <div class="p-6">
                 <div class="flex items-center gap-3 mb-4">
                     <img id="modalPlayerIcon" src="https://placehold.co/64x64/1C1C1C/888888?text=?" alt="Player Icon" class="w-16 h-16 border-2 border-dark-border">
@@ -165,15 +110,12 @@
                         <span id="modalPlayerTag" class="text-md text-dark-text-secondary">#TAG</span>
                     </div>
                 </div>
-
                 <div id="modalGameTimeSection" class="hidden text-center text-dark-text-secondary text-sm font-semibold mb-2">
                     (Game ended 3m ago)
                 </div>
-
                 <div id="modalResultSection" class="mb-4 text-center">
                     <span id="modalMatchResult" class="text-2xl font-bold text-brand-green">VICTORY</span>
                 </div>
-                
                 <div id="modalKDASection" class="flex items-center gap-3 bg-dark-bg p-3 border border-dark-border mb-4">
                     <img id="modalChampIcon" src="https://placehold.co/40x40/0A0A0A/888888?text=?" alt="Champ Icon" class="w-10 h-10 border-2 border-dark-border">
                     <div>
@@ -181,61 +123,47 @@
                         <div id="modalKDA" class="text-sm text-dark-text-secondary">K/D/A</div>
                     </div>
                 </div>
-
                 <div id="modalLiveGameSection" class="hidden p-3 mb-4 font-bold text-md text-center bg-brand-blue/10 border border-brand-blue text-brand-blue uppercase">
                     LIVE GAME (16:32 elapsed)
                 </div>
-                
                 <div class="grid grid-cols-2 gap-4">
-                    
                     <div class="bg-dark-bg p-3 border border-dark-border">
                         <h4 class="text-lg font-bold text-brand-blue mb-3 text-center uppercase">BLUE SIDE</h4>
-                        
                         <div class="mb-3">
                             <h5 class="text-sm text-dark-text-secondary mb-2 uppercase tracking-wider">Bans</h5>
-                            <div id="modalBlueBans" class="flex flex-wrap gap-1.5 justify-center">
-                                </div>
+                            <div id="modalBlueBans" class="flex flex-wrap gap-1.5 justify-center"></div>
                         </div>
-                        
                         <div>
                             <h5 class="text-sm text-dark-text-secondary mb-2 uppercase tracking-wider">Participants</h5>
-                            <div id="modalBlueParticipants" class="flex flex-col gap-2">
-                                </div>
+                            <div id="modalBlueParticipants" class="flex flex-col gap-2"></div>
                         </div>
                     </div>
-                    
                     <div class="bg-dark-bg p-3 border border-dark-border">
                         <h4 class="text-lg font-bold text-brand-red mb-3 text-center uppercase">RED SIDE</h4>
-                        
                         <div class="mb-3">
                             <h5 class="text-sm text-dark-text-secondary mb-2 uppercase tracking-wider">Bans</h5>
-                            <div id="modalRedBans" class="flex flex-wrap gap-1.5 justify-center">
-                                </div>
+                            <div id="modalRedBans" class="flex flex-wrap gap-1.5 justify-center"></div>
                         </div>
-                        
                         <div>
                             <h5 class="text-sm text-dark-text-secondary mb-2 uppercase tracking-wider">Participants</h5>
-                            <div id="modalRedParticipants" class="flex flex-col gap-2">
-                                </div>
+                            <div id="modalRedParticipants" class="flex flex-col gap-2"></div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 
-
     <script>
         // --- CONSTANTS ---
-        // You MUST replace 'YOUR_RENDER_URL_HERE' with your actual hosted backend URL (e.g., https://my-dodgetool.onrender.com)
-        const BACKEND_URL = 'tracker-dodgerino-production.up.railway.app'; 
-        let LATEST_PATCH = '15.21.1'; // Ensure this matches server.js
+        // FIXED: Vercel uses a relative path to the /api/index.js route
+        const BACKEND_URL = ''; 
+        let LATEST_PATCH = '15.21.1';
         let DD_URL = `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}`;
 
         // --- STATE & DOM ELEMENTS ---
         let players = []; 
-        let isChecking = false; // Prevents multiple refreshes
+        let isChecking = false; 
         
         const addPlayerButton = document.getElementById('addPlayerButton');
         const gameNameInput = document.getElementById('gameNameInput');
@@ -255,19 +183,14 @@
         const modalPlayerIcon = document.getElementById('modalPlayerIcon');
         const modalPlayerName = document.getElementById('modalPlayerName');
         const modalPlayerTag = document.getElementById('modalPlayerTag');
-        
-        // Context-specific modal sections
         const modalGameTimeSection = document.getElementById('modalGameTimeSection'); 
         const modalResultSection = document.getElementById('modalResultSection');
         const modalKDASection = document.getElementById('modalKDASection');
         const modalLiveGameSection = document.getElementById('modalLiveGameSection');
-        
         const modalMatchResult = document.getElementById('modalMatchResult');
         const modalChampIcon = document.getElementById('modalChampIcon');
         const modalChampName = document.getElementById('modalChampName');
         const modalKDA = document.getElementById('modalKDA');
-        
-        // Team sections
         const modalBlueBans = document.getElementById('modalBlueBans');
         const modalBlueParticipants = document.getElementById('modalBlueParticipants');
         const modalRedBans = document.getElementById('modalRedBans');
@@ -275,10 +198,6 @@
 
 
         // --- CORE FUNCTIONS ---
-
-        /**
-         * Adds a new player to the list if they aren't already there.
-         */
         function addPlayer() {
             const gameName = gameNameInput.value.trim();
             const tagLine = tagLineInput.value.trim();
@@ -299,16 +218,10 @@
             }
 
             players.push({ 
-                id: playerId, 
-                region: region, 
-                gameName: gameName, 
-                tagLine: cleanTagLine,
-                profileIconUrl: `https://placehold.co/40x40/1C1C1C/888888?text=?`, // Default icon
-                status: 'IDLE',
-                statusMessage: 'Idle',
-                isChampBanned: null,
-                lastMatchDetails: null,
-                liveGameDetails: null
+                id: playerId, region: region, gameName: gameName, tagLine: cleanTagLine,
+                profileIconUrl: `https://placehold.co/40x40/1C1C1C/888888?text=?`,
+                status: 'IDLE', statusMessage: 'Idle', isChampBanned: null,
+                lastMatchDetails: null, liveGameDetails: null
             });
             
             gameNameInput.value = '';
@@ -316,17 +229,11 @@
             renderPlayerList();
         }
         
-        /**
-         * Removes a player from the list by their unique ID.
-         */
         function removePlayer(playerId) {
             players = players.filter(p => p.id !== playerId);
             renderPlayerList();
         }
 
-        /**
-         * Re-draws the entire player list based on the 'players' array.
-         */
         function renderPlayerList() {
             playerListDiv.innerHTML = '';
             
@@ -338,7 +245,6 @@
                     item.className = 'player-item flex justify-between items-center p-3 border-l-4 border-l-dark-border transition-all cursor-pointer hover:bg-dark-border/50';
                     item.setAttribute('data-player-item-id', player.id); 
                     
-                    // Set border color based on status
                     item.classList.remove('border-l-dark-border', 'border-l-brand-red', 'border-l-brand-blue', 'border-l-brand-green', 'border-l-brand-yellow');
                     if (player.status === 'HIGH_RISK') item.classList.add('border-l-brand-red');
                     else if (player.status === 'IN_GAME') item.classList.add('border-l-brand-blue');
@@ -382,7 +288,6 @@
                             </button>
                         </div>
                     `;
-                    // Add error handler for player icon
                     const img = item.querySelector('img');
                     img.onerror = () => { img.src = 'https://placehold.co/40x40/1C1C1C/888888?text=?'; };
 
@@ -392,46 +297,34 @@
             playerCount.innerText = `${players.length} players`;
         }
         
-        /**
-         * Handles the main "REFRESH ALL" button click.
-         */
         async function handleRefresh() {
             if (players.length === 0) {
                 alert("Add some players to the list first.");
                 return;
             }
             if (isChecking) {
-                return; // Do nothing if already checking
-            }
-
-            // CRITICAL CHECK: Ensure the backend URL is set
-            if (BACKEND_URL === 'YOUR_RENDER_URL_HERE') {
-                alert("ERROR: Please update 'BACKEND_URL' in index.html with your hosted server URL.");
                 return;
             }
 
             isChecking = true;
             const champToTrack = champToTrackInput.value.trim() || 'Katarina';
-            disableButton(120); // 2-minute cooldown
+            disableButton(120); 
             
             summaryMessage.className = 'p-3 mb-4 font-bold text-md text-center bg-dark-bg border border-dark-border text-blue-400';
             summaryMessage.innerText = 'Checking players 1 by 1 (to avoid rate limits)...';
 
-            // Reset statuses to "Checking..."
             players.forEach(p => { 
-                p.status = 'CHECKING';
-                p.statusMessage = 'Checking...';
-                p.isChampBanned = null;
+                p.status = 'CHECKING'; p.statusMessage = 'Checking...'; p.isChampBanned = null;
             });
-            renderPlayerList(); // Re-render to show "Checking..."
+            renderPlayerList();
 
             try {
-                // --- FIXED: Use the full, external URL for the hosted backend ---
-                const response = await fetch(`${BACKEND_URL}/check-status`, {
+                // FIXED: Vercel uses relative path to the API endpoint
+                const response = await fetch(`${BACKEND_URL}/check-status`, { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        players: players.map(p => ({ id: p.id, region: p.region, gameName: p.gameName, tagLine: p.tagLine.substring(1) })), // Send tag w/o '#'
+                        players: players.map(p => ({ id: p.id, region: p.region, gameName: p.gameName, tagLine: p.tagLine.substring(1) })),
                         champToTrack: champToTrack
                     })
                 });
@@ -442,7 +335,6 @@
 
                 const statuses = await response.json();
                 
-                // Update our master 'players' list with the new data from the server
                 statuses.forEach(statusUpdate => {
                     const player = players.find(p => p.id === statusUpdate.id);
                     if (player) {
@@ -455,7 +347,6 @@
                     }
                 });
                 
-                // Update summary message
                 const highRisk = players.some(s => s.status === 'HIGH_RISK' || s.status === 'IN_GAME');
                 if (highRisk) {
                     summaryMessage.className = 'p-3 mb-4 font-bold text-md text-center bg-brand-red/10 border border-brand-red text-brand-red uppercase';
@@ -465,7 +356,6 @@
                     summaryMessage.innerText = '🟢 SAFE TO QUEUE 🟢';
                 }
                 
-                // Re-render the list with the final, real data
                 renderPlayerList();
 
             } catch (error) {
@@ -477,9 +367,6 @@
             isChecking = false;
         }
 
-        /**
-         * Manages the 2-minute cooldown timer on the "REFRESH" button.
-         */
         function disableButton(seconds) {
             refreshButton.disabled = true;
             let countdown = seconds;
@@ -488,13 +375,10 @@
             const interval = setInterval(() => {
                 countdown--;
                 if (countdown > 0 && isChecking) {
-                    // While checking, just show "Checking..."
                     refreshButton.innerText = 'Checking...';
                 } else if (countdown > 0 && !isChecking) {
-                    // Done checking, but still on cooldown
                     refreshButton.innerText = `On Cooldown (${countdown}s)`;
                 } else {
-                    // Cooldown finished
                     clearInterval(interval);
                     refreshButton.disabled = false;
                     refreshButton.innerText = 'REFRESH ALL';
@@ -503,24 +387,17 @@
         }
 
         // --- MODAL FUNCTIONS ---
-
-        /** Helper to create a ban icon element */
         function createBanIcon(champName) {
             if (!champName) champName = "Unknown";
             const banIcon = document.createElement('img');
-            // The server now sends the correct champion KEY (e.g., "MonkeyKing")
             banIcon.src = `${DD_URL}/img/champion/${champName}.png`;
             banIcon.alt = champName;
-            banIcon.title = champName; // Will show name on hover
+            banIcon.title = champName;
             banIcon.className = 'w-8 h-8 border border-dark-border';
-            
-            // Handle image load error
             banIcon.onerror = () => { banIcon.src = 'https://placehold.co/32x32/1C1C1C/888888?text=?'; };
-            
             return banIcon;
         }
 
-        /** Helper to create a participant list item */
         function createParticipantItem(participant) {
             const participantItem = document.createElement('div');
             participantItem.className = 'flex items-center gap-2 bg-dark-bg p-2 border border-dark-border';
@@ -530,66 +407,50 @@
                 <span class="text-sm text-white">${participant.gameName} <span class="text-dark-text-secondary">${participant.tagLine}</span></span>
             `;
             
-            // Handle image load error
             const img = participantItem.querySelector('img');
             img.onerror = () => { img.src = 'https://placehold.co/32x32/0A0A0A/888888?text=?'; };
-            
             return participantItem;
         }
         
-        /**
-         * Shows the modal with a player's last match details.
-         */
         function showModal(playerId) {
             const player = players.find(p => p.id === playerId);
             
-            // Check for data
             if (!player || (!player.lastMatchDetails && !player.liveGameDetails)) {
                 alert("No match details found. Click 'Refresh All' first.");
                 return;
             }
 
-            // --- 1. Populate Shared Player Info ---
             modalPlayerIcon.src = player.profileIconUrl;
             modalPlayerIcon.onerror = () => { modalPlayerIcon.src = 'https://placehold.co/64x64/1C1C1C/888888?text=?'; };
             modalPlayerName.innerText = player.gameName;
             modalPlayerTag.innerText = player.tagLine;
 
-            // --- 2. Handle CONTEXT: LIVE GAME vs LAST MATCH ---
             let details;
             if (player.status === 'IN_GAME' && player.liveGameDetails) {
-                // --- LIVE GAME VIEW ---
                 details = player.liveGameDetails;
                 modalTitle.innerText = "Live Game Details";
                 
-                // Show/Hide sections
                 modalGameTimeSection.classList.add('hidden'); 
                 modalResultSection.classList.add('hidden');
                 modalKDASection.classList.add('hidden');
                 modalLiveGameSection.classList.remove('hidden');
                 
-                // Update live game timer
                 const elapsedSeconds = Math.floor((Date.now() - details.gameStartTime) / 1000);
                 modalLiveGameSection.innerText = `LIVE GAME (${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')} elapsed)`;
 
             } else if (player.lastMatchDetails) {
-                // --- LAST MATCH VIEW / PROTECTED VIEW ---
                 details = player.lastMatchDetails;
                 modalTitle.innerText = "Last Match Details";
                 
-                // Show/Hide sections
                 modalGameTimeSection.classList.remove('hidden'); 
                 modalResultSection.classList.remove('hidden');
                 modalKDASection.classList.remove('hidden');
                 modalLiveGameSection.classList.add('hidden');
 
-                // --- NEW: Set Game Time ---
                 modalGameTimeSection.innerText = `(${player.statusMessage})`;
                 if (player.status === 'HIGH_RISK') modalGameTimeSection.className = 'text-center text-brand-red text-sm font-semibold mb-2';
                 else modalGameTimeSection.className = 'text-center text-brand-green text-sm font-semibold mb-2';
 
-
-                // Populate Result
                 if (details.win) {
                     modalMatchResult.innerText = 'VICTORY';
                     modalMatchResult.className = 'text-2xl font-bold text-brand-green text-center';
@@ -598,7 +459,6 @@
                     modalMatchResult.className = 'text-2xl font-bold text-brand-red text-center';
                 }
                 
-                // Populate KDA
                 modalChampIcon.src = `${DD_URL}/img/champion/${details.championPlayed}.png`;
                 modalChampIcon.onerror = () => { modalChampIcon.src = 'https://placehold.co/40x40/0A0A0A/888888?text=?'; };
                 modalChampName.innerText = details.championPlayed;
@@ -609,7 +469,6 @@
                 return;
             }
 
-            // --- 3. Populate Team & Ban Info ---
             modalBlueBans.innerHTML = '';
             modalRedBans.innerHTML = '';
             modalBlueParticipants.innerHTML = '';
@@ -620,19 +479,14 @@
             (details.team1 || []).forEach(p => modalBlueParticipants.appendChild(createParticipantItem(p)));
             (details.team2 || []).forEach(p => modalRedParticipants.appendChild(createParticipantItem(p)));
             
-            // --- 4. Show Modal ---
             modalOverlay.classList.add('visible');
         }
         
-        /**
-         * Hides the modal.
-         */
         function hideModal() {
             modalOverlay.classList.remove('visible');
         }
 
         // --- EVENT LISTENERS ---
-
         addPlayerButton.addEventListener('click', addPlayer);
         gameNameInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -668,7 +522,6 @@
             }
         });
 
-        // Initial render & Hide modal on load
         renderPlayerList();
         hideModal(); 
     </script>

@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/check-status", "destination": "/api/index.js" }
+  ]
+}
