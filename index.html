@@ -39,15 +39,20 @@
     </script>
     
     <style>
+        /* Status Color Classes */
         .status-text.IN_GAME { color: #007BFF; }
         .status-text.HIGH_RISK { color: #E53E3E; }
         .status-text.LOW_RISK { color: #22C55E; }
         .status-text.ERROR { color: #FACC15; }
         .status-text.IDLE { color: #888888; }
         .status-text.CHECKING { color: #888888; }
+        
+        /* Ban Status Classes */
         .ban-status.BANNED { color: #E53E3E; }
         .ban-status.NOT_BANNED { color: #22C55E; }
         .ban-status.IDLE { color: #888888; }
+
+        /* Hover and Modal styles */
         .player-item:hover .delete-btn { opacity: 1; }
         #modal-overlay { visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; }
         #modal-overlay.visible { visibility: visible; opacity: 1; }
@@ -126,7 +131,7 @@
                 <div id="modalLiveGameSection" class="hidden p-3 mb-4 font-bold text-md text-center bg-brand-blue/10 border border-brand-blue text-brand-blue uppercase">
                     LIVE GAME (16:32 elapsed)
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-4 **sm:grid-cols-1 md:grid-cols-2**">
                     <div class="bg-dark-bg p-3 border border-dark-border">
                         <h4 class="text-lg font-bold text-brand-blue mb-3 text-center uppercase">BLUE SIDE</h4>
                         <div class="mb-3">
@@ -156,7 +161,7 @@
 
     <script>
         // --- CONSTANTS ---
-        // FIXED: Vercel uses a relative path to the /api/index.js route
+        // Vercel uses a relative path to the /api/index.js route
         const BACKEND_URL = ''; 
         let LATEST_PATCH = '15.21.1';
         let DD_URL = `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}`;
@@ -176,7 +181,6 @@
         const refreshButton = document.getElementById('refreshButton');
         const summaryMessage = document.getElementById('summaryMessage');
 
-        // Modal elements
         const modalOverlay = document.getElementById('modal-overlay');
         const modalCloseButton = document.getElementById('modalCloseButton');
         const modalTitle = document.getElementById('modalTitle');
@@ -319,8 +323,8 @@
             renderPlayerList();
 
             try {
-                // FIXED: Vercel uses relative path to the API endpoint
-                const response = await fetch(`${BACKEND_URL}/check-status`, { 
+                // The URL is now the Vercel API path (e.g., /check-status)
+                const response = await fetch('/check-status', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -474,6 +478,7 @@
             modalBlueParticipants.innerHTML = '';
             modalRedParticipants.innerHTML = '';
 
+            // FIXED: Only add bans and participants from the correct team arrays (details.team1Bans, details.team2Bans, etc.)
             (details.team1Bans || []).forEach(ban => modalBlueBans.appendChild(createBanIcon(ban)));
             (details.team2Bans || []).forEach(ban => modalRedBans.appendChild(createBanIcon(ban)));
             (details.team1 || []).forEach(p => modalBlueParticipants.appendChild(createParticipantItem(p)));
