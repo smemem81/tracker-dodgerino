@@ -473,12 +473,12 @@
                 return;
             }
 
+            // --- CRITICAL FIX: Clear old data before drawing new data ---
             modalBlueBans.innerHTML = '';
             modalRedBans.innerHTML = '';
             modalBlueParticipants.innerHTML = '';
             modalRedParticipants.innerHTML = '';
 
-            // FIXED: Only add bans and participants from the correct team arrays (details.team1Bans, details.team2Bans, etc.)
             (details.team1Bans || []).forEach(ban => modalBlueBans.appendChild(createBanIcon(ban)));
             (details.team2Bans || []).forEach(ban => modalRedBans.appendChild(createBanIcon(ban)));
             (details.team1 || []).forEach(p => modalBlueParticipants.appendChild(createParticipantItem(p)));
