@@ -376,160 +376,29 @@
             let countdown = seconds;
             refreshButton.innerText = `On Cooldown (${countdown}s)`;
 
-            const interval = setInterval(() => {
-                countdown--;
-                if (countdown > 0 && isChecking) {
-                    refreshButton.innerText = 'Checking...';
-                } else if (countdown > 0 && !isChecking) {
-                    refreshButton.innerText = `On Cooldown (${countdown}s)`;
-                } else {
-                    clearInterval(interval);
-                    refreshButton.disabled = false;
-                    refreshButton.innerText = 'REFRESH ALL';
-                }
-            }, 1000);
-        }
+Two files are being fetched: `index.html` (which is in the `DodgeTool` directory) and `server.js` (which is in the `DodgeTool/api` directory).
 
-        // --- MODAL FUNCTIONS ---
-        function createBanIcon(champName) {
-            if (!champName) champName = "Unknown";
-            const banIcon = document.createElement('img');
-            banIcon.src = `${DD_URL}/img/champion/${champName}.png`;
-            banIcon.alt = champName;
-            banIcon.title = champName;
-            banIcon.className = 'w-8 h-8 border border-dark-border';
-            banIcon.onerror = () => { banIcon.src = 'https://placehold.co/32x32/1C1C1C/888888?text=?'; };
-            return banIcon;
-        }
+I will now provide the `vercel.json` file.
 
-        function createParticipantItem(participant) {
-            const participantItem = document.createElement('div');
-            participantItem.className = 'flex items-center gap-2 bg-dark-bg p-2 border border-dark-border';
-            
-            participantItem.innerHTML = `
-                <img src="${DD_URL}/img/champion/${participant.championPlayed}.png" alt="${participant.championPlayed}" class="w-8 h-8 border border-dark-border">
-                <span class="text-sm text-white">${participant.gameName} <span class="text-dark-text-secondary">${participant.tagLine}</span></span>
-            `;
-            
-            const img = participantItem.querySelector('img');
-            img.onerror = () => { img.src = 'https://placehold.co/32x32/0A0A0A/888888?text=?'; };
-            return participantItem;
-        }
-        
-        function showModal(playerId) {
-            const player = players.find(p => p.id === playerId);
-            
-            if (!player || (!player.lastMatchDetails && !player.liveGameDetails)) {
-                alert("No match details found. Click 'Refresh All' first.");
-                return;
-            }
+### 3. `vercel.json` (The Config File)
 
-            modalPlayerIcon.src = player.profileIconUrl;
-            modalPlayerIcon.onerror = () => { modalPlayerIcon.src = 'https://placehold.co/64x64/1C1C1C/888888?text=?'; };
-            modalPlayerName.innerText = player.gameName;
-            modalPlayerTag.innerText = player.tagLine;
+This file tells Vercel how to handle routing and **must** allow your GitHub Pages URL.
 
-            let details;
-            if (player.status === 'IN_GAME' && player.liveGameDetails) {
-                details = player.liveGameDetails;
-                modalTitle.innerText = "Live Game Details";
-                
-                modalGameTimeSection.classList.add('hidden'); 
-                modalResultSection.classList.add('hidden');
-                modalKDASection.classList.add('hidden');
-                modalLiveGameSection.classList.remove('hidden');
-                
-                const elapsedSeconds = Math.floor((Date.now() - details.gameStartTime) / 1000);
-                modalLiveGameSection.innerText = `LIVE GAME (${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')} elapsed)`;
+**File Location:** `DodgeTool/vercel.json` (in the root folder)
 
-            } else if (player.lastMatchDetails) {
-                details = player.lastMatchDetails;
-                modalTitle.innerText = "Last Match Details";
-                
-                modalGameTimeSection.classList.remove('hidden'); 
-                modalResultSection.classList.remove('hidden');
-                modalKDASection.classList.remove('hidden');
-                modalLiveGameSection.classList.add('hidden');
-
-                modalGameTimeSection.innerText = `(${player.statusMessage})`;
-                if (player.status === 'HIGH_RISK') modalGameTimeSection.className = 'text-center text-brand-red text-sm font-semibold mb-2';
-                else modalGameTimeSection.className = 'text-center text-brand-green text-sm font-semibold mb-2';
-
-                if (details.win) {
-                    modalMatchResult.innerText = 'VICTORY';
-                    modalMatchResult.className = 'text-2xl font-bold text-brand-green text-center';
-                } else {
-                    modalMatchResult.innerText = 'DEFEAT';
-                    modalMatchResult.className = 'text-2xl font-bold text-brand-red text-center';
-                }
-                
-                modalChampIcon.src = `${DD_URL}/img/champion/${details.championPlayed}.png`;
-                modalChampIcon.onerror = () => { modalChampIcon.src = 'https://placehold.co/40x40/0A0A0A/888888?text=?'; };
-                modalChampName.innerText = details.championPlayed;
-                modalKDA.innerText = details.kda;
-                
-            } else {
-                alert("An error occurred. No details to show.");
-                return;
-            }
-
-            // --- CRITICAL FIX: Clear old data before drawing new data ---
-            modalBlueBans.innerHTML = '';
-            modalRedBans.innerHTML = '';
-            modalBlueParticipants.innerHTML = '';
-            modalRedParticipants.innerHTML = '';
-
-            // FIXED: Only add bans and participants from the correct team arrays
-            (details.team1Bans || []).forEach(ban => modalBlueBans.appendChild(createBanIcon(ban)));
-            (details.team2Bans || []).forEach(ban => modalRedBans.appendChild(createBanIcon(ban)));
-            (details.team1 || []).forEach(p => modalBlueParticipants.appendChild(createParticipantItem(p)));
-            (details.team2 || []).forEach(p => modalRedParticipants.appendChild(createParticipantItem(p)));
-            
-            modalOverlay.classList.add('visible');
-        }
-        
-        function hideModal() {
-            modalOverlay.classList.remove('visible');
-        }
-
-        // --- EVENT LISTENERS ---
-        addPlayerButton.addEventListener('click', addPlayer);
-        gameNameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                if (tagLineInput.value.trim() === '') tagLineInput.focus();
-                else addPlayer();
-            }
-        });
-        tagLineInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addPlayer();
-        });
-
-        refreshButton.addEventListener('click', handleRefresh);
-
-        playerListDiv.addEventListener('click', (e) => {
-            const deleteButton = e.target.closest('.delete-btn');
-            if (deleteButton) {
-                e.stopPropagation(); 
-                const playerId = deleteButton.dataset.removeId;
-                removePlayer(playerId);
-            } else {
-                const playerItem = e.target.closest('.player-item');
-                if (playerItem) {
-                    const playerId = playerItem.dataset.playerItemId;
-                    showModal(playerId);
-                }
-            }
-        });
-        
-        modalCloseButton.addEventListener('click', hideModal);
-        modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) {
-                hideModal();
-            }
-        });
-
-        renderPlayerList();
-        hideModal(); 
-    </script>
-</body>
-</html>
+```json
+{
+  "rewrites": [
+    { "source": "/check-status", "destination": "/api" }
+  ],
+  "headers": [
+    {
+      "source": "/check-status",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "[https://cmenem81.github.io](https://cmenem81.github.io)" },
+        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    }
+  ]
+}

@@ -68,6 +68,10 @@ const authenticatedFetch = async (url) => {
 };
 
 const loadChampionData = async () => {
+    // Check if data is already loaded
+    if (Object.keys(championIdMap).length > 0) {
+        return;
+    }
     try {
         const versionResponse = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
         const versions = await versionResponse.json();
@@ -259,52 +263,36 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
 
 // --- API ENTRY POINT FOR VERCEL ---
 
-let dataDragonLoaded = false;
-// Load champion data once when the serverless function environment starts
-loadChampionData().then(() => {
-    dataDragonLoaded = true;
+// Vercel handles cold starts, we load data on demand.
+const dataLoadPromise = loadChampionData();
+
+// This is the Vercel-equivalent of app.post('/check-status', ...)
+app.post('/check-status', async (req, res) => {
+    // Wait for data to be loaded if it's the first run
+    await dataLoadPromise;
+
+    try {
+        const { players, champToTrack } = req.body;
+        console.log(`[Server] Received check request for ${players.length} players. Tracking: ${champToTrack}`);
+        
+        const allStatuses = [];
+        
+        for (const player of players) {
+            console.log(`[Server] Checking ${player.gameName}#${player.tagLine} on ${player.region}...`);
+            const status = await getPlayerStatus(player.region, player.gameName, player.tagLine, champToTrack);
+            allStatuses.push({ ...status, id: player.id });
+            await delay(DELAY_BETWEEN_PLAYERS);
+        }
+
+        console.log(`[Server] Check complete. Sending ${allStatuses.length} statuses to frontend.`);
+        res.json(allStatuses);
+
+    } catch (error) {
+        console.error("Vercel Function Error:", error);
+        res.status(500).json({ message: "Internal Server Error during processing. Check logs.", error: error.message });
+    }
 });
 
-
-// Export the main handler function for VERCEL
-module.exports = async (req, res) => {
-    
-    // Set CORS headers manually
-    res.setHeader('Access-Control-Allow-Origin', '*'); 
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    // Handle the OPTIONS pre-flight request
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
-
-    if (!dataDragonLoaded) {
-        await loadChampionData();
-    }
-    
-    // This is the Vercel-equivalent of app.post('/check-status', ...)
-    // It must match the "rewrites" in vercel.json
-    if (req.url === '/check-status' && req.method === 'POST') {
-        try {
-            const { players, champToTrack } = req.body;
-            
-            const allStatuses = [];
-            for (const player of players) {
-                if (!RIOT_API_KEY) { throw new Error("Riot API Key is missing. Check Vercel Environment Variables."); }
-                const status = await getPlayerStatus(player.region, player.gameName, player.tagLine, champToTrack);
-                allStatuses.push({ ...status, id: player.id });
-                await delay(DELAY_BETWEEN_PLAYERS);
-            }
-
-            res.status(200).json(allStatuses);
-        } catch (error) {
-            console.error("Vercel Function Error:", error);
-            res.status(500).json({ message: "Internal Server Error during processing. Check logs.", error: error.message });
-        }
-    } else {
-        // Handle invalid routes
-        res.status(404).send('Not Found');
-    }
-};
+// --- VERCEL EXPORT ---
+// Vercel handles the server listening. We just export the app.
+module.exports = app;
