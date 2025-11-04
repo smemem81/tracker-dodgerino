@@ -1,10 +1,10 @@
 {
-  "name": "dodge-tool-backend",
+  "name": "dodge-tool-backend-vercel",
   "version": "1.0.0",
-  "description": "Backend for the Riot API dodge tool.",
-  "main": "server.js",
+  "description": "Backend for the Riot API dodge tool (Vercel).",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "express": "^4.19.2",

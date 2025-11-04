@@ -1,15 +1,13 @@
 {
+  "version": 2,
   "rewrites": [
-    { "source": "/check-status", "destination": "/api/index.js" }
-  ],
-  "headers": [
     {
-      "source": "/check-status",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "https://smemem81.github.io" },
-        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
-      ]
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
