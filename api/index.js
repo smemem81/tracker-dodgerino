@@ -1,45 +1,26 @@
 /*
 * ======================================
-* FILE: server.js (LOCAL HOST TEST VERSION)
+* FILE: api/index.js (Vercel Serverless Handler)
 * ======================================
-* VERSION 15.0 - THE ACTUAL FINAL FIX
-* This uses the Spectator V4 API (by-summoner/summonerId)
-* which your screenshot proved is the working endpoint.
+* VERSION 14.0 - THE FINAL LIVE VERSION
+* This uses the working Spectator V4 API endpoint (by-summoner).
 */
 
-const express = require('express');
+// Add required modules for Vercel
 const fetch = require('node-fetch');
-const cors = require('cors'); 
-const app = express();
-const port = 3000; 
+const cors = require('cors'); // Vercel needs to see this
+const express = require('express'); // Vercel needs to see this
 
 // --- CONFIGURATION ---
-// !!! WARNING: PUT YOUR ACTUAL KEY HERE FOR LOCAL TESTING !!!
-const RIOT_API_KEY = "RGAPI-f8f02d7e-91cc-4510-98ee-98d39216bdd6"; 
-const DELAY_BETWEEN_PLAYERS = 2000; 
+const RIOT_API_KEY = process.env.RIOT_API_KEY; 
+const DELAY_BETWEEN_PLAYERS = 2000;
 const HIGH_RISK_MINUTES = 15; 
-// ---------------------
 
 // --- DATA CACHE ---
 let championIdMap = {};
 let championKeyMap = {};
 let LATEST_PATCH_VERSION = "15.21.1"; 
 // ---------------------
-
-// --- CORS FIX for Local Browser ---
-const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8000', 'http://127.0.0.1:8000', null]; 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like file:/// URLs or Postman)
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
-}));
-app.use(express.json());
-app.use(express.static('.'));
 
 // --- HELPER FUNCTIONS ---
 
@@ -48,8 +29,10 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 const formatTimeAgo = (minutes) => {
     if (minutes === 0) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
+    
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours}h ago`;
+    
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
 };
@@ -86,7 +69,6 @@ const authenticatedFetch = async (url) => {
 
 const loadChampionData = async () => {
     try {
-        console.log("[Data Dragon] Fetching latest patch version...");
         const versionResponse = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
         const versions = await versionResponse.json();
         LATEST_PATCH_VERSION = versions[0];
@@ -106,8 +88,6 @@ const loadChampionData = async () => {
 
         championIdMap = tempIdMap;
         championKeyMap = tempKeyMap;
-        console.log(`[Data Dragon] Loaded ${Object.keys(championIdMap).length} champions.`);
-
 
     } catch (error) {
         console.error("[Data Dragon] Failed to load champion data:", error);
@@ -173,6 +153,7 @@ const processMatchData = (matchData, puuid) => {
 }
 
 
+// --- THE MAIN STATUS CHECK FUNCTION ---
 const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
     const platform = getPlatformUrl(region); 
     const regional = getRegionalUrl(region); 
@@ -218,7 +199,7 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
             profileIconUrl: profileIconUrl,
             liveGameDetails: {
                 gameStartTime: gameStartTime, team1Bans: blueBans, team2Bans: redBans,
-                // V4 participant list uses 'summonerName'
+                // V4 participant list uses 'summonerName'. Set tagline to '' to fix #undefined
                 team1: liveGameData.participants.filter(p => p.teamId === 100).map(p => ({ gameName: p.summonerName, tagLine: '', championPlayed: championIdMap[p.championId] || 'Unknown' })),
                 team2: liveGameData.participants.filter(p => p.teamId === 200).map(p => ({ gameName: p.summonerName, tagLine: '', championPlayed: championIdMap[p.championId] || 'Unknown' }))
             }
@@ -255,7 +236,6 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
     
     // --- FINAL LOGIC ---
     // If the live game check failed (404) AND the last game was recent, show HIGH RISK.
-    // We no longer check for 403, as V4 returns 404 for "not in game".
     if (minutesAgo <= HIGH_RISK_MINUTES) {
          return {
             status: 'HIGH_RISK',
@@ -277,31 +257,54 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
 }
 
 
-// --- THE MAIN API ENDPOINT ---
-app.post('/check-status', async (req, res) => {
-    const { players, champToTrack } = req.body;
-    console.log(`[Server] Received check request for ${players.length} players. Tracking: ${champToTrack}`);
+// --- API ENTRY POINT FOR VERCEL ---
+
+let dataDragonLoaded = false;
+// Load champion data once when the serverless function environment starts
+loadChampionData().then(() => {
+    dataDragonLoaded = true;
+});
+
+
+// Export the main handler function for VERCEL
+module.exports = async (req, res) => {
     
-    const allStatuses = [];
-    
-    for (const player of players) {
-        console.log(`[Server] Checking ${player.gameName}#${player.tagLine} on ${player.region}...`);
-        const status = await getPlayerStatus(player.region, player.gameName, player.tagLine, champToTrack);
-        allStatuses.push({ ...status, id: player.id });
-        await delay(DELAY_BETWEEN_PLAYERS);
+    // Set CORS headers manually
+    res.setHeader('Access-Control-Allow-Origin', '*'); 
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle the OPTIONS pre-flight request
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
     }
 
-    console.log(`[Server] Check complete. Sending ${allStatuses.length} statuses to frontend.`);
-    res.json(allStatuses);
-});
+    if (!dataDragonLoaded) {
+        await loadChampionData();
+    }
+    
+    // This is the Vercel-equivalent of app.post('/check-status', ...)
+    // It must match the "rewrites" in vercel.json
+    if (req.url === '/check-status' && req.method === 'POST') {
+        try {
+            const { players, champToTrack } = req.body;
+            
+            const allStatuses = [];
+            for (const player of players) {
+                if (!RIOT_API_KEY) { throw new Error("Riot API Key is missing. Check Vercel Environment Variables."); }
+                const status = await getPlayerStatus(player.region, player.gameName, player.tagLine, champToTrack);
+                allStatuses.push({ ...status, id: player.id });
+                await delay(DELAY_BETWEEN_PLAYERS);
+            }
 
-// Start the server
-console.log("[Server] Initializing...");
-loadChampionData().then(() => {
-    app.listen(port, () => {
-        console.log(`====================================================`);
-        console.log(`  Dodge Tool Backend Server IS RUNNING (Local)`);
-        console.log(`  Please open your index.html file in your browser.`);
-        console.log(`====================================================`);
-    });
-});
+            res.status(200).json(allStatuses);
+        } catch (error) {
+            console.error("Vercel Function Error:", error);
+            res.status(500).json({ message: "Internal Server Error during processing. Check logs.", error: error.message });
+        }
+    } else {
+        // Handle invalid routes
+        res.status(404).send('Not Found');
+    }
+};
