@@ -131,7 +131,7 @@
                 <div id="modalLiveGameSection" class="hidden p-3 mb-4 font-bold text-md text-center bg-brand-blue/10 border border-brand-blue text-brand-blue uppercase">
                     LIVE GAME (16:32 elapsed)
                 </div>
-                <div class="grid grid-cols-2 gap-4 **sm:grid-cols-1 md:grid-cols-2**">
+                <div class="grid grid-cols-2 gap-4">
                     <div class="bg-dark-bg p-3 border border-dark-border">
                         <h4 class="text-lg font-bold text-brand-blue mb-3 text-center uppercase">BLUE SIDE</h4>
                         <div class="mb-3">
@@ -323,7 +323,7 @@
             renderPlayerList();
 
             try {
-                // The URL is now the Vercel API path (e.g., /check-status)
+                // Vercel uses a relative path to the /api endpoint (which is routed to /check-status by vercel.json)
                 const response = await fetch('/check-status', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -394,13 +394,10 @@
         function createBanIcon(champName) {
             if (!champName) champName = "Unknown";
             const banIcon = document.createElement('img');
-            // Use the DDragon URL but account for potential data inconsistencies
             banIcon.src = `${DD_URL}/img/champion/${champName}.png`;
             banIcon.alt = champName;
             banIcon.title = champName;
             banIcon.className = 'w-8 h-8 border border-dark-border';
-            
-            // Fallback for missing/corrupted champion icons
             banIcon.onerror = () => { banIcon.src = 'https://placehold.co/32x32/1C1C1C/888888?text=?'; };
             return banIcon;
         }
@@ -415,7 +412,6 @@
             `;
             
             const img = participantItem.querySelector('img');
-            // Fallback for missing/corrupted champion icons
             img.onerror = () => { img.src = 'https://placehold.co/32x32/0A0A0A/888888?text=?'; };
             return participantItem;
         }
@@ -467,7 +463,6 @@
                     modalMatchResult.className = 'text-2xl font-bold text-brand-red text-center';
                 }
                 
-                // --- FIXED: Ensure KDA champion icon loads correctly ---
                 modalChampIcon.src = `${DD_URL}/img/champion/${details.championPlayed}.png`;
                 modalChampIcon.onerror = () => { modalChampIcon.src = 'https://placehold.co/40x40/0A0A0A/888888?text=?'; };
                 modalChampName.innerText = details.championPlayed;

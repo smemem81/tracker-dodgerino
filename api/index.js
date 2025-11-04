@@ -2,12 +2,13 @@
 * ======================================
 * FILE: api/index.js (Vercel Serverless Handler)
 * ======================================
-* This code replaces the original server.js logic and is set up to run on Vercel.
+* VERSION 14.0 - THE FINAL LIVE VERSION
+* This uses the working Spectator V4 API endpoint (by-summoner).
 */
 
 const fetch = require('node-fetch');
 
-// --- CONFIGURATION (KEPT AT THE TOP) ---
+// --- CONFIGURATION ---
 const RIOT_API_KEY = process.env.RIOT_API_KEY; 
 const DELAY_BETWEEN_PLAYERS = 2000;
 const HIGH_RISK_MINUTES = 15; 
@@ -18,7 +19,7 @@ let championKeyMap = {};
 let LATEST_PATCH_VERSION = "15.21.1"; 
 // ---------------------
 
-// --- HELPER FUNCTIONS (Kept the same) ---
+// --- HELPER FUNCTIONS ---
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -56,12 +57,17 @@ const getRegionalUrl = (region) => {
     return regionMap[region.toUpperCase()];
 }
 
-/**
- * Loads the latest patch version and champion data from Data Dragon.
- */
+// --- Utility function for authenticated fetch (used for all API calls) ---
+const authenticatedFetch = async (url) => {
+    // This function will be called inside getPlayerStatus
+    // We don't log status here because getPlayerStatus will
+    const response = await fetch(url, { headers: { "X-Riot-Token": RIOT_API_KEY } });
+    console.log(`[API Response] Status: ${response.status} for URL: ${url}`);
+    return response;
+};
+
 const loadChampionData = async () => {
     try {
-        console.log("[Data Dragon] Fetching latest patch version...");
         const versionResponse = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
         const versions = await versionResponse.json();
         LATEST_PATCH_VERSION = versions[0];
@@ -87,9 +93,6 @@ const loadChampionData = async () => {
     }
 }
 
-/**
- * Gets the correct champion image key (e.g., "Wukong" -> "MonkeyKing")
- */
 const getChampionKey = (champName) => {
     if (championKeyMap[champName]) {
         return championKeyMap[champName];
@@ -97,16 +100,10 @@ const getChampionKey = (champName) => {
     return champName; 
 }
 
-/**
- * Converts a list of champion IDs to champion IMAGE KEYS.
- */
 const convertBanIdsToImageKeys = (banIds) => {
     return banIds.map(id => championIdMap[id] || 'Unknown');
 }
 
-/**
- * Processes data for a single match
- */
 const processMatchData = (matchData, puuid) => {
     if (!matchData || !matchData.info) return null;
 
@@ -160,12 +157,6 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
     const platform = getPlatformUrl(region); 
     const regional = getRegionalUrl(region); 
     
-    // --- Utility function for authenticated fetch (used for all API calls) ---
-    const authenticatedFetch = async (url) => {
-        const response = await fetch(url, { headers: { "X-Riot-Token": RIOT_API_KEY } });
-        return response;
-    };
-    
     // --- 1. Get PUUID from Riot ID (Uses Regional) ---
     const accountResponse = await authenticatedFetch(`https://${regional}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
     const accountData = accountResponse.ok ? await accountResponse.json() : null;
@@ -177,14 +168,15 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
     const summonerData = summonerResponse.ok ? await summonerResponse.json() : null;
     if (!summonerResponse.ok || !summonerData) return { status: 'ERROR', statusMessage: 'Summoner Not Found', id: `${region}-${gameName}-${tagLine}` };
 
+    const summonerId = summonerData.id; // <-- WE NEED THIS ID
     const profileIconUrl = `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH_VERSION}/img/profileicon/${summonerData.profileIconId}.png`;
     const champImageKey = getChampionKey(champToTrack) || champToTrack;
 
-    // --- 3. Check for Live Game (V5 - Regional Routing) ---
-    const spectatorURL = `https://${regional}/lol/spectator/v5/active-games/by-puuid/${puuid}`;
-    const liveGameResponse = await fetch(spectatorURL, { headers: { "X-Riot-Token": RIOT_API_KEY } });
+    // --- 3. CHECK FOR LIVE GAME (FIXED: Using V4 Spectator with SUMMONER ID) ---
+    const spectatorURL = `https://${platform}/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
+    const liveGameResponse = await authenticatedFetch(spectatorURL);
     
-    // --- CASE A: Success (200 OK) - Player is viewable and in game ---
+    // --- CASE A: Success (200 OK) - Player is in game ---
     if (liveGameResponse.ok) {
         const liveGameData = await liveGameResponse.json();
         
@@ -205,20 +197,15 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
             isChampBanned: champBanned,
             profileIconUrl: profileIconUrl,
             liveGameDetails: {
-                gameStartTime: gameStartTime,
-                team1Bans: blueBans,
-                team2Bans: redBans,
-                team1: liveGameData.participants
-                    .filter(p => p.teamId === 100)
-                    .map(p => ({ gameName: p.summonerName || p.summonerId, tagLine: '', championPlayed: championIdMap[p.championId] || 'Unknown' })),
-                team2: liveGameData.participants
-                    .filter(p => p.teamId === 200)
-                    .map(p => ({ gameName: p.summonerName || p.summonerId, tagLine: '', championPlayed: championIdMap[p.championId] || 'Unknown' }))
+                gameStartTime: gameStartTime, team1Bans: blueBans, team2Bans: redBans,
+                // V4 participant list uses 'summonerName'. Set tagline to '' to fix #undefined
+                team1: liveGameData.participants.filter(p => p.teamId === 100).map(p => ({ gameName: p.summonerName, tagLine: '', championPlayed: championIdMap[p.championId] || 'Unknown' })),
+                team2: liveGameData.participants.filter(p => p.teamId === 200).map(p => ({ gameName: p.summonerName, tagLine: '', championPlayed: championIdMap[p.championId] || 'Unknown' }))
             }
         };
     }
     
-    // --- 4. Get last match. (Used for all fallthroughs: 403, 404, or other errors) ---
+    // --- 4. Get last match. (Used for 404 Not Found) ---
     const matchListResponse = await authenticatedFetch(`https://${regional}/lol/match/v5/matches/by-puuid/${puuid}/ids?count=1`);
     
     const matchList = matchListResponse.ok ? await matchListResponse.json() : [];
@@ -237,40 +224,25 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
 
     // --- 5. Process Last Match Data ---
     const gameEndTimestamp = finalMatchData.info.gameEndTimestamp; 
-    
     let minutesAgo = 0; 
     if (gameEndTimestamp && typeof gameEndTimestamp === 'number' && gameEndTimestamp > 0) {
         minutesAgo = Math.floor((Date.now() - gameEndTimestamp) / 60000);
     }
     
     const fullMatchDetails = processMatchData(finalMatchData, puuid); 
-    const champBanned = [...(fullMatchDetails.team1Bans || []), ...(fullMatchDetails.team2Bans || [])]
-        .some(ban => ban.toLowerCase() === champImageKey.toLowerCase());
-    
+    const champBanned = [...(fullMatchDetails.team1Bans || []), ...(fullMatchDetails.team2Bans || [])].some(ban => ban.toLowerCase() === champImageKey.toLowerCase());
     const formattedTime = formatTimeAgo(minutesAgo);
-        
+    
+    // --- FINAL LOGIC ---
+    // If the live game check failed (404) AND the last game was recent, show HIGH RISK.
     if (minutesAgo <= HIGH_RISK_MINUTES) {
-        // High Risk/Inferred Online Window (0-15 minutes ago)
-        
-        if (liveGameResponse.status === 403) {
-            // Case 1: 403 (Policy Block) + Recent Game -> Streamer Mode Warning
-            return { 
-                status: 'HIGH_RISK', 
-                statusMessage: `BE CAREFUL (${formattedTime})`, 
-                isChampBanned: null, 
-                profileIconUrl: profileIconUrl,
-                lastMatchDetails: fullMatchDetails
-            };
-        } else {
-             // Case 2: 404 Not Found + Recent Game -> Standard High Risk (In Queue/Champ Select)
-             return {
-                status: 'HIGH_RISK',
-                statusMessage: `HIGH RISK (${formattedTime})`,
-                isChampBanned: champBanned,
-                profileIconUrl: profileIconUrl,
-                lastMatchDetails: fullMatchDetails
-            };
-        }
+         return {
+            status: 'HIGH_RISK',
+            statusMessage: `HIGH RISK (${formattedTime})`, 
+            isChampBanned: champBanned,
+            profileIconUrl: profileIconUrl,
+            lastMatchDetails: fullMatchDetails
+        };
     }
 
     // --- STANDARD LOW RISK CHECK (Last game ended > 15m ago) ---
@@ -286,17 +258,18 @@ const getPlayerStatus = async (region, gameName, tagLine, champToTrack) => {
 
 // --- API ENTRY POINT FOR VERCEL ---
 
+let dataDragonLoaded = false;
 // Load champion data once when the serverless function environment starts
-// This makes sure the data is ready before the first request runs.
 loadChampionData().then(() => {
-    console.log("Data Dragon loaded successfully for Vercel.");
+    dataDragonLoaded = true;
 });
 
 
 // Export the main handler function for VERCEL
 module.exports = async (req, res) => {
     
-    // Set CORS headers manually to fix the error you were seeing
+    // Set CORS headers manually
+    // We allow '*' (all origins) because vercel.json will lock it down.
     res.setHeader('Access-Control-Allow-Origin', '*'); 
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -306,14 +279,20 @@ module.exports = async (req, res) => {
         res.status(200).end();
         return;
     }
+
+    if (!dataDragonLoaded) {
+        await loadChampionData();
+    }
     
+    // This is the Vercel-equivalent of app.post('/check-status', ...)
+    // It must match the "rewrites" in vercel.json
     if (req.url === '/check-status' && req.method === 'POST') {
         try {
-            // Vercel handles the request body parsing for us
             const { players, champToTrack } = req.body;
             
             const allStatuses = [];
             for (const player of players) {
+                if (!RIOT_API_KEY) { throw new Error("Riot API Key is missing. Check Vercel Environment Variables."); }
                 const status = await getPlayerStatus(player.region, player.gameName, player.tagLine, champToTrack);
                 allStatuses.push({ ...status, id: player.id });
                 await delay(DELAY_BETWEEN_PLAYERS);
@@ -325,7 +304,7 @@ module.exports = async (req, res) => {
             res.status(500).json({ message: "Internal Server Error during processing. Check logs.", error: error.message });
         }
     } else {
-        // Handle invalid routes (Not /check-status)
+        // Handle invalid routes
         res.status(404).send('Not Found');
     }
 };
