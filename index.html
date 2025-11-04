@@ -28,10 +28,22 @@
                         'brand-red': '#E53E3E',
                         'brand-green': '#22C55E',
                         'brand-yellow': '#FACC15',
+                        
+                        // New 9080 Mode Palette
+                        'mode-9080-bg': '#000000', // NOW BLACK
+                        'mode-9080-border': '#FF8C00', // Bright orange
+                        'mode-9080-text': '#FF8C00', // Bright orange
+                        'mode-9080-accent': '#E53E3E', // Tactical red
+                        'mode-9080-red': '#E53E3E', 
+                        'mode-9080-green': '#22C55E',
+                        'mode-9080-scanner': 'rgba(255, 140, 0, 0.3)', // Translucent scanner color
                     },
                     borderRadius: {
                         'none': '0px', 'sm': '0px', 'DEFAULT': '0px', 'md': '0px',
                         'lg': '0px', 'xl': '0px', '2xl': '0px', '3xl': '0px', 'full': '0px',
+                    },
+                    boxShadow: {
+                         // Glow effects removed
                     }
                 },
             },
@@ -54,15 +66,94 @@
 
         /* Hover and Modal styles */
         .player-item:hover .delete-btn { opacity: 1; }
-        #modal-overlay { visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        #modal-overlay { visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; z-index: 50; }
         #modal-overlay.visible { visibility: visible; opacity: 1; }
-        #modal-content { transform: translateY(20px); transition: transform 0.2s ease-in-out; max-width: 600px; }
+        #modal-content { transform: translateY(20px); transition: transform 0.2s ease-in-out; max-width: 600px; z-index: 51; }
         #modal-overlay.visible #modal-content { transform: translateY(0); }
+
+        /* 9080 Mode specific styles */
+        body.mode-9080-active {
+            background-color: #000000; /* Black */
+            overflow: hidden; /* Hide scrollbars */
+        }
+
+        .sci-fi-panel {
+            background-color: rgba(0, 0, 0, 0.6); /* Translucent black */
+            border: 1px solid #FF8C00; /* Orange */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+        
+        .sci-fi-title {
+            font-size: 1.25rem; /* 20px */
+            font-weight: 700;
+            color: #FF8C00; /* Orange */
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 1rem; /* 16px */
+            border-bottom: 1px solid #FF8C00; /* Orange */
+            /* Text glow removed */
+        }
+
+        .sci-fi-button {
+             background-color: #FF8C00; /* Orange */
+             color: #05080a; /* Dark bg */
+             font-weight: 700;
+             text-transform: uppercase;
+             padding: 0.75rem 1.5rem;
+             transition: all 0.2s ease-in-out;
+        }
+        .sci-fi-button:hover {
+            background-color: #E53E3E; /* Accent color (red) */
+            color: #05080a;
+            box-shadow: 0 0 15px rgba(229, 62, 62, 0.7); /* Red glow */
+        }
+        .sci-fi-button:disabled {
+            background-color: #2C2C2C;
+            color: #888888;
+            cursor: not-allowed;
+        }
+        
+        .sci-fi-input {
+            background-color: #000000; /* Black */
+            border: 1px solid #FF8C00; /* Orange */
+            color: #F0F0F0;
+            padding: 0.75rem;
+            font-family: 'Righteous', sans-serif;
+        }
+        .sci-fi-input::placeholder {
+            color: #888888;
+        }
+        .sci-fi-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.7); /* Orange glow */
+        }
+
+        .radar-canvas {
+            background-color: rgba(0, 0, 0, 0.8); 
+        }
+        
+        /* Custom scrollbar for sci-fi panels */
+        .sci-fi-panel-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .sci-fi-panel-content::-webkit-scrollbar-track {
+            background: #000000; /* Black */
+            border-left: 1px solid #FF8C00; /* Orange */
+        }
+        .sci-fi-panel-content::-webkit-scrollbar-thumb {
+            background: #FF8C00; /* Orange */
+        }
+        .sci-fi-panel-content::-webkit-scrollbar-thumb:hover {
+            background: #E53E3E; /* Red */
+        }
+
     </style>
 </head>
 <body class="bg-dark-bg text-dark-text-primary font-sans p-4 md:p-8">
 
-    <div class="max-w-xl mx-auto">
+    <div id="normalModeContainer" class="max-w-xl mx-auto">
         <h1 class="text-3xl font-bold text-center text-white mb-6 tracking-wide uppercase">Dodge Tool</h1>
         <div class="bg-dark-card border border-dark-border mb-3">
             <div class="flex flex-col sm:flex-row gap-3 p-4">
@@ -95,10 +186,74 @@
                 <button id="refreshButton" class="w-full py-4 px-6 bg-brand-blue text-white text-lg font-semibold transition-all duration-200 ease-in-out hover:bg-brand-yellow hover:text-dark-bg focus:outline-none disabled:bg-dark-border disabled:text-dark-text-secondary disabled:cursor-not-allowed uppercase tracking-wider">
                     REFRESH ALL
                 </button>
+                 <button id="activate9080ModeButton" class="w-full py-3 mt-4 px-6 bg-mode-9080-border text-white text-md font-semibold transition-all duration-200 ease-in-out hover:bg-brand-yellow hover:text-dark-bg focus:outline-none uppercase tracking-wider">
+                    ACTIVATE 9080 MODE
+                </button>
             </div>
         </div>
     </div>
     
+    <div id="mode9080Container" class="hidden fixed inset-0 p-4 grid grid-cols-3 grid-rows-2 gap-4">
+        
+        <div class="col-span-1 row-span-2 flex flex-col gap-4">
+            
+            <div class="sci-fi-panel">
+                 <h2 class="sci-fi-title">Track Your Last Game</h2>
+                 <div class="p-4 space-y-3">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="myGameNameInput" class="sci-fi-input flex-grow" placeholder="Your Game Name">
+                        <input type="text" id="myTagLineInput" class="sci-fi-input w-full sm:w-28" placeholder="#KR1">
+                        <select id="myRegionSelect" class="sci-fi-input w-full sm:w-auto">
+                            <option value="KR">KR</option><option value="EUW1">EUW</option><option value="NA1">NA</option><option value="EUN1">EUNE</option><option value="BR1">BR</option><option value="JP1">JP</option><option value="LA1">LAN</option><option value="LA2">LAS</option><option value="OC1">OCE</option><option value="TR1">TR</Nption><option value="RU">RU</option>
+                        </select>
+                    </div>
+                    <button id="activateRadarButton" class="sci-fi-button w-full">
+                        Load Last Game & Activate Radar
+                    </button>
+                 </div>
+            </div>
+
+            <div class="sci-fi-panel flex-grow">
+                <h2 class="sci-fi-title">TARGETS</h2>
+                <div id="radarPlayerList" class="sci-fi-panel-content flex-grow overflow-y-auto divide-y divide-dark-border p-2">
+                    <p class="text-center text-dark-text-secondary p-6">Load your last game to see targets here.</p>
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="sci-fi-panel col-span-1 row-span-2 relative">
+             <h2 class="sci-fi-title">TARGET RADAR</h2>
+             <div class="flex-grow flex items-center justify-center p-4 relative overflow-hidden">
+                <canvas id="radarCanvas" width="600" height="600" class="radar-canvas"></canvas>
+                <div id="radarStatusMessage" class="absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-dark-text-secondary z-10">
+                    Input your account to load the radar.
+                </div>
+             </div>
+             <div class="p-4 border-t border-mode-9080-border">
+                <button id="trackRadarButton" class="sci-fi-button w-full" disabled>
+                    ACTIVATE RADAR
+                </button>
+             </div>
+        </div>
+        
+        <div class="sci-fi-panel col-span-1 row-span-2">
+            <h2 class="sci-fi-title">System Alerts</h2>
+            <div id="systemAlertsList" class="sci-fi-panel-content flex-grow overflow-y-auto p-4 text-dark-text-secondary space-y-2">
+                <p>&gt; 9080 Mode Initialized.</p>
+                <p>&gt; Awaiting user input...</p>
+                </div>
+             <div class="p-4 border-t border-mode-9080-border">
+                 <button id="deactivate9080ModeButton" class="sci-fi-button w-full !bg-mode-9080-red hover:!bg-brand-yellow">
+                    Exit Mode
+                </button>
+            </div>
+        </div>
+        
+    </div>
+
+
     <div id="modal-overlay" class="fixed inset-0 bg-dark-bg bg-opacity-80 flex items-center justify-center p-4">
         <div id="modal-content" class="bg-dark-card border border-dark-border w-full">
             <div class="flex justify-between items-center p-4 border-b border-dark-border">
@@ -131,7 +286,7 @@
                 <div id="modalLiveGameSection" class="hidden p-3 mb-4 font-bold text-md text-center bg-brand-blue/10 border border-brand-blue text-brand-blue uppercase">
                     LIVE GAME (16:32 elapsed)
                 </div>
-                <div class="grid grid-cols-2 gap-4 **sm:grid-cols-1 md:grid-cols-2**">
+                <div class="grid grid-cols-2 gap-4">
                     <div class="bg-dark-bg p-3 border border-dark-border">
                         <h4 class="text-lg font-bold text-brand-blue mb-3 text-center uppercase">BLUE SIDE</h4>
                         <div class="mb-3">
@@ -161,7 +316,8 @@
 
     <script>
         // --- CONSTANTS ---
-        // FIXED: Local hosting uses the explicit URL for the local server
+        // We build the full URL, so this isn't strictly needed
+        // but we'll leave it for context.
         const BACKEND_URL = '/api'; 
         let LATEST_PATCH = '15.21.1';
         let DD_URL = `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}`;
@@ -169,7 +325,12 @@
         // --- STATE & DOM ELEMENTS ---
         let players = []; 
         let isChecking = false; 
-        
+        let radarPlayers = []; // State for players on the radar
+        let scannerAngle = 0; // State for radar scanner animation
+        let animationFrameId = null; // ID for animation loop
+
+        // Normal Mode DOM elements
+        const normalModeContainer = document.getElementById('normalModeContainer');
         const addPlayerButton = document.getElementById('addPlayerButton');
         const gameNameInput = document.getElementById('gameNameInput');
         const tagLineInput = document.getElementById('tagLineInput');
@@ -180,7 +341,24 @@
         const playerCount = document.getElementById('playerCount');
         const refreshButton = document.getElementById('refreshButton');
         const summaryMessage = document.getElementById('summaryMessage');
+        const activate9080ModeButton = document.getElementById('activate9080ModeButton');
 
+        // 9080 Mode DOM elements
+        const mode9080Container = document.getElementById('mode9080Container');
+        const deactivate9080ModeButton = document.getElementById('deactivate9080ModeButton');
+        const myGameNameInput = document.getElementById('myGameNameInput');
+        const myTagLineInput = document.getElementById('myTagLineInput');
+        const myRegionSelect = document.getElementById('myRegionSelect');
+        const activateRadarButton = document.getElementById('activateRadarButton');
+        const radarCanvas = document.getElementById('radarCanvas');
+        const radarContext = radarCanvas.getContext('2d');
+        const radarStatusMessage = document.getElementById('radarStatusMessage');
+        const trackRadarButton = document.getElementById('trackRadarButton');
+        const radarPlayerListDiv = document.getElementById('radarPlayerList'); 
+        const systemAlertsList = document.getElementById('systemAlertsList');
+
+
+        // Modal DOM elements
         const modalOverlay = document.getElementById('modal-overlay');
         const modalCloseButton = document.getElementById('modalCloseButton');
         const modalTitle = document.getElementById('modalTitle');
@@ -201,7 +379,7 @@
         const modalRedParticipants = document.getElementById('modalRedParticipants');
 
 
-        // --- CORE FUNCTIONS ---
+        // --- CORE FUNCTIONS (Normal Mode) ---
         function addPlayer() {
             const gameName = gameNameInput.value.trim();
             const tagLine = tagLineInput.value.trim();
@@ -322,9 +500,11 @@
             });
             renderPlayerList();
 
+            // --- REAL BACKEND LOGIC ---
             try {
-                // FIXED: Use the explicit local URL for the hosted backend
-                const response = await fetch(`${BACKEND_URL}/check-status`, { 
+                // Construct the full URL for the API endpoint
+                const url = window.location.origin + '/api/check-status'; 
+                const response = await fetch(url, { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -334,7 +514,8 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Server error: ${response.statusText}`);
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Server error: ${response.statusText}`);
                 }
 
                 const statuses = await response.json();
@@ -354,10 +535,10 @@
                 const highRisk = players.some(s => s.status === 'HIGH_RISK' || s.status === 'IN_GAME');
                 if (highRisk) {
                     summaryMessage.className = 'p-3 mb-4 font-bold text-md text-center bg-brand-red/10 border border-brand-red text-brand-red uppercase';
-                    summaryMessage.innerText = '🔴 DO NOT QUEUE 🔴';
+                    summaryMessage.innerText = 'DODGE 👎';
                 } else {
                     summaryMessage.className = 'p-3 mb-4 font-bold text-md text-center bg-brand-green/10 border border-brand-green text-brand-green uppercase';
-                    summaryMessage.innerText = '🟢 SAFE TO QUEUE 🟢';
+                    summaryMessage.innerText = 'SAFE TO QUEUE 👍';
                 }
                 
                 renderPlayerList();
@@ -365,27 +546,29 @@
             } catch (error) {
                 console.error(error);
                 summaryMessage.className = 'p-3 mb-4 font-bold text-md text-center bg-dark-bg border border-dark-border text-brand-red';
-                summaryMessage.innerText = 'Error connecting to server. Check logs/API key.';
+                summaryMessage.innerText = error.message || 'Error connecting to server.';
             }
             
             isChecking = false;
+            // --- END REAL BACKEND LOGIC ---
         }
 
-        function disableButton(seconds) {
-            refreshButton.disabled = true;
+        function disableButton(seconds, buttonElement = refreshButton) {
+            buttonElement.disabled = true;
             let countdown = seconds;
-            refreshButton.innerText = `On Cooldown (${countdown}s)`;
+            let originalText = buttonElement.innerText;
+            buttonElement.innerText = `On Cooldown (${countdown}s)`;
 
             const interval = setInterval(() => {
                 countdown--;
-                if (countdown > 0 && isChecking) {
-                    refreshButton.innerText = 'Checking...';
-                } else if (countdown > 0 && !isChecking) {
-                    refreshButton.innerText = `On Cooldown (${countdown}s)`;
+                if (countdown > 0 && isChecking && buttonElement === refreshButton) { 
+                     buttonElement.innerText = 'Checking...';
+                } else if (countdown > 0) {
+                    buttonElement.innerText = `On Cooldown (${countdown}s)`;
                 } else {
                     clearInterval(interval);
-                    refreshButton.disabled = false;
-                    refreshButton.innerText = 'REFRESH ALL';
+                    buttonElement.disabled = false;
+                    buttonElement.innerText = originalText;
                 }
             }, 1000);
         }
@@ -473,13 +656,11 @@
                 return;
             }
 
-            // --- CRITICAL FIX: Clear old data before drawing new data ---
             modalBlueBans.innerHTML = '';
             modalRedBans.innerHTML = '';
             modalBlueParticipants.innerHTML = '';
             modalRedParticipants.innerHTML = '';
 
-            // FIXED: Only add bans and participants from the correct team arrays
             (details.team1Bans || []).forEach(ban => modalBlueBans.appendChild(createBanIcon(ban)));
             (details.team2Bans || []).forEach(ban => modalRedBans.appendChild(createBanIcon(ban)));
             (details.team1 || []).forEach(p => modalBlueParticipants.appendChild(createParticipantItem(p)));
@@ -492,7 +673,419 @@
             modalOverlay.classList.remove('visible');
         }
 
+        // --- 9080 Mode Functions ---
+
+        // Helper function to add alerts
+        function addSystemAlert(message, type = 'info') {
+            const alertElement = document.createElement('p');
+            let colorClass = 'text-mode-9080-text'; // Orange
+            if (type === 'success') {
+                colorClass = 'text-mode-9080-green';
+            } else if (type === 'error') {
+                colorClass = 'text-mode-9080-red';
+            }
+            
+            alertElement.className = colorClass;
+            alertElement.innerText = `> ${message}`;
+            
+            systemAlertsList.appendChild(alertElement);
+            // Auto-scroll to the bottom
+            systemAlertsList.scrollTop = systemAlertsList.scrollHeight;
+        }
+
+        function activate9080Mode() {
+            normalModeContainer.classList.add('hidden');
+            mode9080Container.classList.remove('hidden');
+            document.body.classList.add('mode-9080-active');
+            
+            // Resize canvas on activation
+            resizeCanvas();
+            
+            // Start animation loop
+            if (animationFrameId === null) {
+                radarAnimationLoop();
+            }
+        }
+
+        function deactivate9080Mode() {
+            mode9080Container.classList.add('hidden');
+            normalModeContainer.classList.remove('hidden');
+            document.body.classList.remove('mode-9080-active');
+            
+            // Stop animation loop
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            // Clear radar and player list when exiting
+            radarContext.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
+            radarPlayerListDiv.innerHTML = '<p class="text-center text-dark-text-secondary p-6">Load your last game to see targets here.</p>';
+            radarPlayers = [];
+            trackRadarButton.disabled = true;
+            radarStatusMessage.innerText = 'Input your account to load the radar.';
+        }
+        
+        function resizeCanvas() {
+            // Resize canvas to fit its container
+            const canvasContainer = radarCanvas.parentElement;
+            // Use Math.min to ensure the canvas is always a perfect square
+            const size = Math.min(canvasContainer.clientWidth, canvasContainer.clientHeight) - 32; // 32px padding (p-4 from parent)
+            
+            if (radarCanvas.width !== size || radarCanvas.height !== size) {
+                 radarCanvas.width = size;
+                 radarCanvas.height = size;
+            }
+        }
+
+        function drawRadarBase() {
+            const ctx = radarContext;
+            const centerX = radarCanvas.width / 2;
+            const centerY = radarCanvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 20; // Padding
+
+            // Draw concentric circles
+            ctx.strokeStyle = 'rgba(255, 140, 0, 0.2)'; // Faint orange lines
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 4; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, (radius / 4) * i, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Draw radiating lines
+            for (let i = 0; i < 12; i++) {
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                const angle = (Math.PI / 6) * i;
+                ctx.lineTo(centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle));
+                ctx.stroke();
+            }
+            
+            // Draw outer border
+            ctx.strokeStyle = 'rgba(255, 140, 0, 0.5)'; // Brighter orange border
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        // Draw the animated scanner
+        function drawRadarScanner() {
+            const ctx = radarContext;
+            const centerX = radarCanvas.width / 2;
+            const centerY = radarCanvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 20; // Padding
+            
+            // Update angle
+            scannerAngle = (scannerAngle + 0.02) % (Math.PI * 2); // Controls speed
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, scannerAngle - Math.PI / 3, scannerAngle); // 60-degree arc
+            ctx.closePath();
+            
+            // Create a radial gradient for the scanner
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+            gradient.addColorStop(0, 'rgba(255, 140, 0, 0.1)'); 
+            gradient.addColorStop(0.8, 'rgba(255, 140, 0, 0.4)'); 
+            gradient.addColorStop(1, 'rgba(255, 140, 0, 0.1)'); 
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Draw the leading edge of the scanner
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + radius * Math.cos(scannerAngle), centerY + radius * Math.sin(scannerAngle));
+            ctx.strokeStyle = 'rgba(255, 140, 0, 0.8)'; // Bright orange edge
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // Main animation loop for the radar
+        function radarAnimationLoop() {
+            // Clear the canvas
+            radarContext.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
+            
+            // Draw the static base
+            drawRadarBase();
+            
+            // Draw the player dots
+            renderRadarPlayers();
+            
+            // Draw the scanner sweep on top
+            drawRadarScanner();
+            
+            // Request the next frame
+            animationFrameId = requestAnimationFrame(radarAnimationLoop);
+        }
+
+
+        async function loadLastGameAndActivateRadar() {
+            const gameName = myGameNameInput.value.trim();
+            const tagLine = myTagLineInput.value.trim();
+            const region = myRegionSelect.value;
+
+            if (!gameName || !tagLine) {
+                alert("Please enter your Game Name and Tagline for 9080 Mode.");
+                return;
+            }
+
+            addSystemAlert('Attempting to load last game...');
+            radarStatusMessage.className = 'absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-mode-9080-text z-10';
+            radarStatusMessage.innerText = 'Loading last game...';
+            disableButton(30, activateRadarButton); 
+
+            // --- REAL BACKEND LOGIC ---
+            try {
+                // Construct the full URL
+                const url = window.location.origin + '/api/get-last-game-participants';
+                const cleanTagLine = tagLine.startsWith('#') ? tagLine.substring(1) : tagLine;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gameName: gameName,
+                        tagLine: cleanTagLine,
+                        region: region
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Server error: ${response.statusText}`);
+                }
+
+                const participants = await response.json(); // Expects an array of players
+
+                radarPlayers = participants.map(p => ({
+                    gameName: p.gameName,
+                    tagLine: p.tagLine,
+                    region: p.region,
+                    puuid: p.puuid,
+                    profileIconUrl: p.profileIconUrl || `https://placehold.co/32x32/1C1C1C/F0F0F0?text=${p.gameName[0]}`,
+                    status: 'IDLE' // Initial status
+                }));
+                
+                // Filter out the user who is searching
+                radarPlayers = radarPlayers.filter(p => 
+                    !(p.gameName.toLowerCase() === gameName.toLowerCase() && 
+                      p.tagLine.toLowerCase() === cleanTagLine.toLowerCase())
+                );
+
+                radarStatusMessage.className = 'absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-mode-9080-green z-10';
+                radarStatusMessage.innerText = `Last game loaded. Found ${radarPlayers.length} participants.`;
+                addSystemAlert(`Last game loaded. Found ${radarPlayers.length} targets.`, 'success');
+                
+                resizeCanvas();
+                renderRadarPlayerList();
+                trackRadarButton.disabled = false; // Enable the "Activate Radar" button
+
+            } catch (error) {
+                console.error(error);
+                radarStatusMessage.className = 'absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-mode-9080-red z-10';
+                radarStatusMessage.innerText = error.message || 'Failed to load last game.';
+                addSystemAlert(error.message || 'Failed to load last game.', 'error');
+                trackRadarButton.disabled = true;
+            }
+            // --- END REAL BACKEND LOGIC ---
+        }
+
+        function renderRadarPlayers() {
+            // This function now *only* draws the player dots
+            const ctx = radarContext;
+            const centerX = radarCanvas.width / 2;
+            const centerY = radarCanvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 20;
+
+            const time = Date.now() * 0.0001; // Slow time progression
+
+            radarPlayers.forEach((player, index) => {
+                // Assign an initial position on the radar if one doesn't exist
+                if (player.angle === undefined) {
+                    player.angle = (Math.PI * 2 / radarPlayers.length) * index;
+                }
+                if (player.distance === undefined) {
+                    player.distance = radius * (0.3 + (index % 4) * 0.18); 
+                }
+                if (player.angleDriftOffset === undefined) {
+                    player.angleDriftOffset = Math.random() * 100;
+                }
+                if (player.distanceDriftOffset === undefined) {
+                    player.distanceDriftOffset = Math.random() * 100;
+                }
+
+                // Use sine waves for smooth, continuous drift
+                const angleDrift = (Math.sin(time + player.angleDriftOffset) - 0.5) * 0.002; 
+                const distanceDrift = (Math.sin(time + player.distanceDriftOffset) - 0.5) * 0.05; 
+
+                player.angle += angleDrift;
+                player.distance += distanceDrift;
+
+                // Clamp distance to stay within radar bounds
+                if (player.distance > radius - 10) player.distance = radius - 10;
+                if (player.distance < 20) player.distance = 20; 
+                
+                const x = centerX + player.distance * Math.cos(player.angle);
+                const y = centerY + player.distance * Math.sin(player.angle);
+
+                // Set color based on status
+                let dotColor = 'rgba(136, 136, 136, 0.8)'; // Grey default
+                let labelColor = '#FF8C00'; // Orange default
+                if (player.status === 'IN_GAME') {
+                    dotColor = 'rgba(34, 197, 94, 1)'; // Green
+                    labelColor = '#22C55E';
+                } else if (player.status === 'NOT_IN_GAME') {
+                    dotColor = 'rgba(229, 62, 62, 1)'; // Red
+                    labelColor = '#E53E3E';
+                } else if (player.status === 'CHECKING') {
+                    dotColor = 'rgba(255, 140, 0, 1)'; // Orange
+                    labelColor = '#FF8C00';
+                }
+                
+                // Draw target label
+                const label = player.gameName.toUpperCase();
+                ctx.font = 'bold 12px "Righteous", sans-serif';
+                const textWidth = ctx.measureText(label).width;
+                
+                // Draw black rect background
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; 
+                ctx.fillRect(x + 18, y - 10, textWidth + 8, 20); 
+                
+                // Draw text on top
+                ctx.fillStyle = labelColor;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, x + 22, y); 
+
+                // Draw the diamond/box shape
+                ctx.strokeStyle = labelColor;
+                ctx.lineWidth = 2;
+                ctx.save();
+                ctx.translate(x, y); 
+                ctx.rotate(time * 0.5 + player.angleDriftOffset); // Rotate
+                ctx.strokeRect(-8, -8, 16, 16); 
+                ctx.restore();
+                
+                // Draw inner dot
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, Math.PI * 2); 
+                ctx.fillStyle = dotColor;
+                ctx.shadowColor = dotColor;
+                ctx.shadowBlur = 15;
+                ctx.fill();
+                ctx.shadowBlur = 0; // Reset shadow
+            });
+        }
+
+        function renderRadarPlayerList() {
+            radarPlayerListDiv.innerHTML = ''; // Clear previous list
+
+            if (radarPlayers.length === 0) {
+                radarPlayerListDiv.innerHTML = '<p class="text-center text-dark-text-secondary p-6">No targets loaded.</p>';
+            } else {
+                radarPlayers.forEach(player => {
+                    const playerElement = document.createElement('div');
+                    // Updated styling for sci-fi list
+                    playerElement.className = 'flex items-center justify-between p-3 border-b-2 border-b-dark-border/50 hover:bg-dark-bg/30 transition-colors';
+                    
+                    let statusColorClass = 'text-dark-text-secondary';
+                    let statusText = 'Unknown';
+                    if (player.status === 'IN_GAME') {
+                        statusColorClass = 'text-mode-9080-green';
+                        statusText = 'IN GAME';
+                    } else if (player.status === 'NOT_IN_GAME') {
+                        statusColorClass = 'text-mode-9080-red';
+                        statusText = 'NOT IN GAME';
+                    } else if (player.status === 'CHECKING') {
+                        statusColorClass = 'text-mode-9080-text';
+                        statusText = 'CHECKING...';
+                    }
+
+                    playerElement.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <img src="${player.profileIconUrl || 'https://placehold.co/32x32/1C1C1C/888888?text=?'}" alt="icon" class="w-8 h-8 border-2 border-dark-border">
+                            <span class="text-sm text-dark-text-primary">${player.gameName} <span class="text-dark-text-secondary">${player.tagLine ? '#' + player.tagLine : ''}</span></span>
+                        </div>
+                        <span class="text-xs font-semibold ${statusColorClass} uppercase">
+                            ${statusText}
+                        </span>
+                    `;
+                    radarPlayerListDiv.appendChild(playerElement);
+                });
+            }
+        }
+
+
+        async function trackRadarPlayers() {
+            if (radarPlayers.length === 0) {
+                alert("No players to track on radar. Load a last game first.");
+                return;
+            }
+            if (isChecking) { 
+                return;
+            }
+
+            isChecking = true; 
+            disableButton(60, trackRadarButton); // Disable for 60 seconds
+
+            addSystemAlert('Activating radar, tracking targets...');
+            radarStatusMessage.className = 'absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-mode-9080-text z-10';
+            radarStatusMessage.innerText = 'Tracking radar players...';
+
+            // Mark all radar players as checking
+            radarPlayers.forEach(p => { p.status = 'CHECKING'; });
+            renderRadarPlayerList(); // Update list
+
+            // --- REAL BACKEND LOGIC ---
+            try {
+                // Construct the full URL
+                const url = window.location.origin + '/api/check-radar-players-status';
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        // Send puuid and region for each player
+                        players: radarPlayers.map(p => ({ puuid: p.puuid, region: p.region }))
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Server error: ${response.statusText}`);
+                }
+
+                const statuses = await response.json(); // Expects an array of { puuid, status }
+
+                statuses.forEach(statusUpdate => {
+                    const player = radarPlayers.find(p => p.puuid === statusUpdate.puuid);
+                    if (player) {
+                        player.status = statusUpdate.status; // e.g., 'IN_GAME' or 'NOT_IN_GAME'
+                    }
+                });
+
+                radarStatusMessage.className = 'absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-mode-9080-green z-10';
+                radarStatusMessage.innerText = 'Radar updated successfully.';
+                addSystemAlert('Radar update successful. Targets acquired.', 'success');
+                
+                renderRadarPlayerList();
+
+            } catch (error) {
+                console.error(error);
+                radarStatusMessage.className = 'absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-mode-9080-red z-10';
+                radarStatusMessage.innerText = error.message || 'Failed to track radar.';
+                addSystemAlert(error.message || 'Failed to track radar.', 'error');
+            }
+            isChecking = false;
+            // --- END REAL BACKEND LOGIC ---
+        }
+
         // --- EVENT LISTENERS ---
+        // Normal Mode
         addPlayerButton.addEventListener('click', addPlayer);
         gameNameInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -503,9 +1096,7 @@
         tagLineInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addPlayer();
         });
-
         refreshButton.addEventListener('click', handleRefresh);
-
         playerListDiv.addEventListener('click', (e) => {
             const deleteButton = e.target.closest('.delete-btn');
             if (deleteButton) {
@@ -521,6 +1112,21 @@
             }
         });
         
+        // 9080 Mode Activation
+        activate9080ModeButton.addEventListener('click', activate9080Mode);
+        deactivate9080ModeButton.addEventListener('click', deactivate9080Mode);
+        activateRadarButton.addEventListener('click', loadLastGameAndActivateRadar);
+        trackRadarButton.addEventListener('click', trackRadarPlayers);
+
+        // Add window resize listener to resize canvas
+        window.addEventListener('resize', () => {
+            if (!mode9080Container.classList.contains('hidden')) {
+                resizeCanvas();
+            }
+        });
+
+
+        // Modal
         modalCloseButton.addEventListener('click', hideModal);
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) {
@@ -528,6 +1134,7 @@
             }
         });
 
+        // Initial render
         renderPlayerList();
         hideModal(); 
     </script>

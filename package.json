@@ -2,14 +2,11 @@
   "name": "dodge-tool-backend-vercel",
   "version": "1.0.0",
   "description": "Backend for the Riot API dodge tool (Vercel).",
-  "main": "api/index.js",
   "scripts": {
-    "start": "node api/index.js"
+    "start": "echo 'No start script needed for Vercel serverless functions'"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "node-fetch": "^2.7.0",
-    "cors": "^2.8.5"
+    "node-fetch": "^2.7.0"
   },
   "author": "",
   "license": "ISC"
